@@ -371,6 +371,7 @@ model User {
   referralRewardsGiven    ReferralReward[]  @relation("ReferralReferrer")
   referralRewardsReceived ReferralReward[]  @relation("ReferralReferee")
   followingShops   Shop[]
+  voucherUsages    VoucherUsage[]
   deviceInfo       Json?
   lastLoginAt      DateTime?
   createdAt        DateTime      @default(now())
@@ -803,13 +804,11 @@ model ProductQa {
 
 model Cart {
   id        String     @id @default(cuid())
-  userId    String
+  userId    String     @unique
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     CartItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-
-  @@index([userId])
 }
 
 model CartItem {
@@ -1186,6 +1185,7 @@ model VoucherUsage {
   voucherId   String
   voucher     Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   userId      String
+  user        User     @relation(fields: [userId], references: [id])
   orderId     String?
   discountApplied Decimal @db.Decimal(12, 2)
   usedAt      DateTime @default(now())
