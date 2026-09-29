@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { SlidersHorizontal, X } from 'lucide-react';
@@ -32,15 +32,17 @@ const SORTS: Array<{ value: string; label: string }> = [
   { value: 'rating', label: 'Top Rated' },
 ];
 
-export function SearchView({
-  lockedCategoryId,
-  lockedShopId,
-  title,
-}: {
+interface SearchViewProps {
   lockedCategoryId?: string;
   lockedShopId?: string;
   title?: string;
-}) {
+}
+
+function SearchViewInner({
+  lockedCategoryId,
+  lockedShopId,
+  title,
+}: SearchViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -231,5 +233,14 @@ export function SearchView({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Same reason as SearchBar: the hook must not abort static generation. */
+export function SearchView(props: SearchViewProps) {
+  return (
+    <Suspense fallback={<div className="py-16 text-center text-sm text-muted-foreground">Loading…</div>}>
+      <SearchViewInner {...props} />
+    </Suspense>
   );
 }

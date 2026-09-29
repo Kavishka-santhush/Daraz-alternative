@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { Suspense, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ interface SearchBarProps {
 }
 
 /** Header search box — submits to /search?q=. Preserves an existing query. */
-export function SearchBar({ className, placeholder = 'Search products, brands and more…' }: SearchBarProps) {
+function SearchBarInner({ className, placeholder = 'Search products, brands and more…' }: SearchBarProps) {
   const router = useRouter();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get('q') ?? '');
@@ -42,5 +42,18 @@ export function SearchBar({ className, placeholder = 'Search products, brands an
         <span className="hidden sm:inline">Search</span>
       </Button>
     </form>
+  );
+}
+
+/**
+ * The header mounts this on every route, so the boundary belongs here rather
+ * than in 30+ pages: without it, useSearchParams() aborts static generation of
+ * every page that renders the header.
+ */
+export function SearchBar(props: SearchBarProps) {
+  return (
+    <Suspense fallback={<div aria-hidden className={cn('h-9 rounded-md border border-input bg-muted', props.className)} />}>
+      <SearchBarInner {...props} />
+    </Suspense>
   );
 }
