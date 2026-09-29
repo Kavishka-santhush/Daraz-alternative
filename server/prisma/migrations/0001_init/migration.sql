@@ -1157,8 +1157,6 @@ CREATE UNIQUE INDEX "NotificationPreference_userId_typeKey_key" ON "Notification
 CREATE UNIQUE INDEX "PushSubscription_endpoint_key" ON "PushSubscription"("endpoint");
 CREATE UNIQUE INDEX "SupportTicket_ticketNumber_key" ON "SupportTicket"("ticketNumber");
 CREATE UNIQUE INDEX "ScheduledJobRun_key_key" ON "ScheduledJobRun"("key");
-CREATE UNIQUE INDEX "_ShopToUser_AB_unique" ON "_ShopToUser"("A","B");
-CREATE UNIQUE INDEX "_VoucherCategories_AB_unique" ON "_VoucherCategories"("A","B");
 
 -- CreateIndex
 CREATE INDEX "User_role_status_idx" ON "User"("role","status");
