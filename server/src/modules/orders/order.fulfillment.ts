@@ -68,7 +68,7 @@ export async function advanceStatus(sellerUserId: string, subId: string, to: Ord
 
 export async function addTracking(sellerUserId: string, subId: string, trackingNumber: string, courierName: string) {
   const sub = await loadSubForSeller(sellerUserId, subId);
-  if (![OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED].includes(sub.status)) throw ApiError.badRequest('Cannot add tracking for this order state');
+  if (!([OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED] as OrderStatus[]).includes(sub.status)) throw ApiError.badRequest('Cannot add tracking for this order state');
   await prisma.sellerSubOrder.update({ where: { id: subId }, data: { trackingNumber, courierName } });
   await prisma.orderEvent.create({ data: { subOrderId: subId, title: 'Tracking added', description: `${courierName}: ${trackingNumber}`, actorType: 'SELLER', actorId: sellerUserId } });
   return { ok: true };
@@ -77,7 +77,7 @@ export async function addTracking(sellerUserId: string, subId: string, trackingN
 /** Seller cancels — releases stock and refunds the buyer sub-order share. */
 export async function sellerCancel(sellerUserId: string, subId: string, reason: string) {
   const sub = await loadSubForSeller(sellerUserId, subId);
-  if ([OrderStatus.SHIPPED, OrderStatus.DELIVERED].includes(sub.status)) throw ApiError.badRequest('Shipped orders cannot be cancelled');
+  if (([OrderStatus.SHIPPED, OrderStatus.DELIVERED] as OrderStatus[]).includes(sub.status)) throw ApiError.badRequest('Shipped orders cannot be cancelled');
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const item of sub.items) {
       const product = await tx.product.findUnique({ where: { id: item.productId } });

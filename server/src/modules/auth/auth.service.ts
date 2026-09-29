@@ -193,7 +193,7 @@ export async function logout(refreshToken: string) {
 
 export async function verifyEmail(uid: string, token: string) {
   const hash = hashToken(`verify:${uid}:${token}`);
-  const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash: hash }, include: { user: true } });
+  const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash: hash }, include: { user: { select: { status: true, sellerProfile: { select: { id: true } } } } } });
   if (!record || record.usedAt || record.expiresAt < new Date()) throw ApiError.badRequest('Verification link is invalid or expired');
   await prisma.$transaction([
     prisma.user.update({ where: { id: uid }, data: { emailVerifiedAt: new Date(), status: record.user.sellerProfile ? record.user.status : UserStatus.ACTIVE } }),

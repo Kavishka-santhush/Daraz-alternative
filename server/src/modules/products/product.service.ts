@@ -142,9 +142,9 @@ export async function listProducts(query: any, opts: { adminView?: boolean; sell
 function mapSort(sort?: string): Prisma.ProductOrderByWithRelationInput[] {
   switch (sort) {
     case 'price_asc':
-      return [{ salePrice: { order: 'asc', nulls: 'last' } }, { originalPrice: 'asc' }];
+      return [{ salePrice: { sort: 'asc', nulls: 'last' } }, { originalPrice: 'asc' }];
     case 'price_desc':
-      return [{ salePrice: { order: 'desc', nulls: 'first' } }, { originalPrice: 'desc' }];
+      return [{ salePrice: { sort: 'desc', nulls: 'first' } }, { originalPrice: 'desc' }];
     case 'newest':
       return [{ createdAt: 'desc' }];
     case 'best_selling':

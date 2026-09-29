@@ -9,13 +9,16 @@ export async function getProfile(userId: string) {
       id: true, name: true, email: true, phone: true, avatarUrl: true, role: true, status: true,
       emailVerifiedAt: true, phoneVerifiedAt: true, referralCode: true, loyaltyPoints: true, coins: true, createdAt: true,
       wallet: { select: { balance: true, currency: true } },
-      sellerProfile: { select: { id: true, status: true, shop: { select: { id: true, name: true, slug: true } } } },
+      sellerProfile: { select: { id: true, status: true, shops: { where: { isActive: true }, take: 1, select: { id: true, name: true, slug: true } } } },
       _count: { select: { addresses: true, orders: true, wishlists: true, reviews: true } },
     },
   });
   if (!user) throw ApiError.notFound('User not found');
   return {
     ...user,
+    sellerProfile: user.sellerProfile
+      ? { id: user.sellerProfile.id, status: user.sellerProfile.status, shop: user.sellerProfile.shops[0] ?? null }
+      : null,
     walletBalance: user.wallet ? Number(user.wallet.balance) : 0,
     walletCurrency: user.wallet?.currency ?? 'LKR',
   };

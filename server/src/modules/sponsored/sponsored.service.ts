@@ -141,7 +141,7 @@ export async function adminListCampaigns(query: { status?: string; placement?: s
   const [rows, total] = await prisma.$transaction([
     prisma.sponsoredListing.findMany({
       where,
-      include: { product: { select: { id: true, title: true, slug: true } }, seller: { select: { id: true, shop: { select: { name: true } } } } },
+      include: { product: { select: { id: true, title: true, slug: true } }, seller: { select: { id: true, shops: { where: { isActive: true }, take: 1, select: { name: true } } } } },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -152,7 +152,7 @@ export async function adminListCampaigns(query: { status?: string; placement?: s
     rows.map((r) => ({
       id: r.id,
       product: r.product,
-      shopName: r.seller?.shop?.name ?? null,
+      shopName: r.seller?.shops[0]?.name ?? null,
       placement: r.placement,
       bidAmount: Number(r.bidAmount),
       billingCycle: r.billingCycle,

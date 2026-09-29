@@ -65,9 +65,9 @@ export async function sellerDecision(sellerUserId: string, returnId: string, dec
 
 /** Marks items returned + initiates the refund via payments. */
 export async function completeRefund(actorId: string, returnId: string, refundMethod: 'ORIGINAL' | 'WALLET') {
-  const ret = await prisma.returnRequest.findUnique({ where: { id: returnId, }, include: { subOrder: { include: { items: true, order: true } } } });
+  const ret = await prisma.returnRequest.findUnique({ where: { id: returnId, }, include: { items: true, subOrder: { include: { items: true, order: true } } } });
   if (!ret) throw ApiError.notFound('Return not found');
-  if (![ReturnStatus.APPROVED, ReturnStatus.ITEM_RETURNED].includes(ret.status)) throw ApiError.badRequest('Return not ready for refund');
+  if (!([ReturnStatus.APPROVED, ReturnStatus.ITEM_RETURNED] as ReturnStatus[]).includes(ret.status)) throw ApiError.badRequest('Return not ready for refund');
 
   // Restock returned items.
   for (const item of ret.subOrder.items) {
@@ -125,7 +125,7 @@ export async function listReturns(req: Request, scope: { sellerUserId?: string; 
   const limit = Number(req.query.limit ?? 20);
   const where: Prisma.ReturnRequestWhereInput = {};
   if (scope.sellerUserId) where.subOrder = { shop: { seller: { userId: scope.sellerUserId } } };
-  if (scope.admin) where.dispute = req.query.onlyDisputes ? { not: null } : undefined;
+  if (scope.admin) where.dispute = req.query.onlyDisputes ? { isNot: null } : undefined;
   if (req.query.status) where.status = req.query.status as ReturnStatus;
   const [items, total] = await prisma.$transaction([
     prisma.returnRequest.findMany({ where, include: { items: true, subOrder: { include: { shop: { select: { name: true } }, order: { select: { orderNumber: true, buyer: { select: { name: true } } } } } }, dispute: true }, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),

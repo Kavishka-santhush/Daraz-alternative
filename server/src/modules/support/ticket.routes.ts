@@ -11,7 +11,7 @@ import * as ticket from './ticket.service';
 
 const router = Router();
 
-const STAFF_ROLES = [UserRole.SUPPORT_AGENT, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATIONS_MANAGER];
+const STAFF_ROLES: UserRole[] = [UserRole.SUPPORT_AGENT, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATIONS_MANAGER];
 
 const createSchema = z.object({
   type: z.enum(['ORDER', 'RETURN', 'REFUND', 'PRODUCT', 'PAYMENT', 'ACCOUNT', 'OTHER']),

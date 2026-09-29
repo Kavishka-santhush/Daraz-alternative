@@ -109,13 +109,17 @@ export async function getUserDetail(id: string) {
       id: true, name: true, email: true, phone: true, role: true, status: true, avatarUrl: true, emailVerifiedAt: true, phoneVerifiedAt: true,
       loyaltyPoints: true, coins: true, referralCode: true, createdAt: true, lastLoginAt: true, deviceInfo: true,
       wallet: { select: { balance: true } },
-      sellerProfile: { select: { id: true, status: true, tier: true, shop: { select: { id: true, name: true, slug: true } } } },
+      sellerProfile: { select: { id: true, status: true, tier: true, shops: { where: { isActive: true }, take: 1, select: { id: true, name: true, slug: true } } } },
       loginHistory: { orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, ip: true, userAgent: true, deviceId: true, success: true, method: true, createdAt: true } },
       _count: { select: { orders: true, reviews: true, tickets: true, loginHistory: true } },
     },
   });
   if (!user) throw ApiError.notFound('User not found');
-  return user;
+  const profile = user.sellerProfile;
+  return {
+    ...user,
+    sellerProfile: profile ? { id: profile.id, status: profile.status, tier: profile.tier, shop: profile.shops[0] ?? null } : null,
+  };
 }
 
 export async function setUserStatus(staffId: string, id: string, status: UserStatus, reason?: string) {

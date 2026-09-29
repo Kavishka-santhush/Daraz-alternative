@@ -87,7 +87,7 @@ export async function searchProducts(input: SearchInput, viewerId?: string) {
   if (input.onSale) where.OR = [{ salePrice: { not: null } }, { discountPercent: { gt: 0 } }];
   for (const [key, value] of Object.entries(input.attributes ?? {})) {
     const values = Array.isArray(value) ? value : [value];
-    and.push({ variants: { some: { attributeValues: { some: { attribute: { slug: key }, value: { in: values } } } } } });
+    and.push({ variants: { some: { attributeValues: { some: { attribute: { slug: key }, attributeValue: { in: values } } } } } });
   }
   if (input.minPrice != null || input.maxPrice != null) {
     const gte = input.minPrice != null ? Number(input.minPrice) : undefined;
@@ -130,9 +130,9 @@ export async function searchProducts(input: SearchInput, viewerId?: string) {
 function mapSort(sort?: SearchInput['sort']): Prisma.ProductOrderByWithRelationInput[] {
   switch (sort) {
     case 'price_asc':
-      return [{ salePrice: { order: 'asc', nulls: 'last' } }, { originalPrice: 'asc' }];
+      return [{ salePrice: { sort: 'asc', nulls: 'last' } }, { originalPrice: 'asc' }];
     case 'price_desc':
-      return [{ salePrice: { order: 'desc', nulls: 'first' } }, { originalPrice: 'desc' }];
+      return [{ salePrice: { sort: 'desc', nulls: 'first' } }, { originalPrice: 'desc' }];
     case 'newest':
       return [{ createdAt: 'desc' }];
     case 'best_selling':
@@ -149,10 +149,10 @@ export async function getFacets(input: SearchInput) {
   const base: Prisma.ProductWhereInput = { status: ProductStatus.ACTIVE };
   if (input.q) base.OR = [{ title: { contains: input.q, mode: 'insensitive' } }, { description: { contains: input.q, mode: 'insensitive' } }];
   const [categories, brands, price, conditions] = await prisma.$transaction([
-    prisma.product.groupBy({ by: ['categoryId'], where: base, _count: { _all: true }, orderBy: { _count: { categoryId: 'desc' } }, take: 12 }),
-    prisma.product.groupBy({ by: ['brandId'], where: { ...base, brandId: { not: null } }, _count: { _all: true }, orderBy: { _count: { brandId: 'desc' } }, take: 12 }),
+    prisma.product.groupBy({ by: ['categoryId'], where: base, _count: { categoryId: true }, orderBy: { _count: { categoryId: 'desc' } }, take: 12 }),
+    prisma.product.groupBy({ by: ['brandId'], where: { ...base, brandId: { not: null } }, _count: { brandId: true }, orderBy: { _count: { brandId: 'desc' } }, take: 12 }),
     prisma.product.aggregate({ where: base, _min: { originalPrice: true }, _max: { originalPrice: true } }),
-    prisma.product.groupBy({ by: ['condition'], where: base, _count: { _all: true } }),
+    prisma.product.groupBy({ by: ['condition'], where: base, _count: true, orderBy: { condition: 'asc' } }),
   ]);
   const categoryIds = categories.map((c) => c.categoryId).filter(Boolean);
   const brandIds = brands.map((b) => b.brandId).filter(Boolean) as string[];
@@ -161,9 +161,9 @@ export async function getFacets(input: SearchInput) {
     prisma.brand.findMany({ where: { id: { in: brandIds } }, select: { id: true, name: true, slug: true } }),
   ]);
   return {
-    categories: categories.map((c) => ({ ...categoryMeta.find((m) => m.id === c.categoryId), count: c._count._all })),
-    brands: brands.map((b) => ({ ...brandMeta.find((m) => m.id === b.brandId), count: b._count._all })),
-    conditions: conditions.map((c) => ({ condition: c.condition, count: c._count._all })),
+    categories: categories.map((c) => ({ ...categoryMeta.find((m) => m.id === c.categoryId), count: c._count.categoryId })),
+    brands: brands.map((b) => ({ ...brandMeta.find((m) => m.id === b.brandId), count: b._count.brandId })),
+    conditions: conditions.map((c) => ({ condition: c.condition, count: c._count })),
     price: { min: Number(price._min.originalPrice ?? 0), max: Number(price._max.originalPrice ?? 0) },
   };
 }
@@ -204,9 +204,9 @@ export async function suggestions(q: string, limit = 8) {
 
 export async function popularSearches(limit = 10) {
   const since = new Date(Date.now() - 30 * 86400000);
-  const rows = await prisma.searchQuery.groupBy({ by: ['normalized'], where: { createdAt: { gte: since } }, _count: { _all: true }, orderBy: { _count: { normalized: 'desc' } }, take: limit });
+  const rows = await prisma.searchQuery.groupBy({ by: ['normalized'], where: { createdAt: { gte: since } }, _count: { normalized: true }, orderBy: { _count: { normalized: 'desc' } }, take: limit });
   const meta = await prisma.searchQuery.findMany({ where: { normalized: { in: rows.map((r) => r.normalized) } }, select: { normalized: true, query: true }, distinct: ['normalized'] });
-  return rows.map((r) => ({ query: meta.find((m) => m.normalized === r.normalized)?.query ?? r.normalized, count: r._count._all }));
+  return rows.map((r) => ({ query: meta.find((m) => m.normalized === r.normalized)?.query ?? r.normalized, count: r._count.normalized }));
 }
 
 export async function logSearch(userId: string | null, query: string, resultsCount: number, clickedProductId?: string) {

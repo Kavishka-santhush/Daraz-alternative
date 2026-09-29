@@ -88,10 +88,10 @@ export async function listProductReviews(productId: string, req: Request) {
   const [items, total, breakdown] = await prisma.$transaction([
     prisma.review.findMany({ where, include: { buyer: { select: { name: true, avatarUrl: true } }, helpfulVotes: { select: { userId: true, isHelpful: true } }, media: true }, orderBy, skip: (page - 1) * limit, take: limit }),
     prisma.review.count({ where }),
-    prisma.review.groupBy({ by: ['rating'], where: { productId, isVisible: true }, _count: { _all: true } }),
+    prisma.review.groupBy({ by: ['rating'], where: { productId, isVisible: true }, _count: true, orderBy: { rating: 'asc' } }),
   ]);
   const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<number, number>;
-  for (const b of breakdown) counts[b.rating] = b._count._all;
+  for (const b of breakdown) counts[b.rating] = b._count;
   return { ...paginated(items.map(({ helpfulVotes, ...r }) => ({ ...r, helpfulCount: helpfulVotes.filter((h) => h.isHelpful).length })), total, page, limit), ratingBreakdown: counts };
 }
 

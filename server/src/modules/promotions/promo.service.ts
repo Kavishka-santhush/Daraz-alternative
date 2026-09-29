@@ -224,9 +224,13 @@ export async function listBundles(opts: { shopId?: string; includeInactive?: boo
       ...(opts.shopId ? { shopId: opts.shopId } : { isActive: true }),
       ...(!opts.includeInactive && !opts.shopId ? { OR: [{ startsAt: null }, { startsAt: { lte: now } }], AND: [{ endsAt: null }, { endsAt: { gt: now } }] } : {}),
     },
-    include: { items: { include: { product: { select: { ...SALE_CARD, salePrice: true } } } }, shop: { select: { id: true, name: true, slug: true } } },
+    include: { items: { include: { product: { select: { ...SALE_CARD, salePrice: true } } } } },
     orderBy: { createdAt: 'desc' },
     take: 40,
+  });
+  const shops = await prisma.shop.findMany({
+    where: { id: { in: bundles.map((b) => b.shopId).filter(Boolean) as string[] } },
+    select: { id: true, name: true, slug: true },
   });
   return bundles.map((b) => {
     const regular = b.items.reduce((sum, i) => sum + Number(i.product.salePrice ?? i.product.originalPrice) * i.quantity, 0);
@@ -244,7 +248,7 @@ export async function listBundles(opts: { shopId?: string; includeInactive?: boo
       regularPrice: Number(regular.toFixed(2)),
       bundlePrice,
       savings: Number((regular - bundlePrice).toFixed(2)),
-      shop: b.shop,
+      shop: shops.find((s) => s.id === b.shopId) ?? null,
       startsAt: b.startsAt,
       endsAt: b.endsAt,
       items: b.items.map((i) => shapeProduct(i.product)),
@@ -253,7 +257,7 @@ export async function listBundles(opts: { shopId?: string; includeInactive?: boo
 }
 
 export async function setBundleActive(actorId: string, bundleId: string, isActive: boolean) {
-  const bundle = await prisma.bundleDeal.findUnique({ where: { id: bundleId }, include: { shop: { select: { seller: { select: { userId: true } } } } } });
+  const bundle = await prisma.bundleDeal.findUnique({ where: { id: bundleId } });
   if (!bundle) throw ApiError.notFound('Bundle not found');
   await prisma.bundleDeal.update({ where: { id: bundleId }, data: { isActive } });
   await prisma.auditLog.create({ data: { actorId, action: isActive ? 'bundle:activate' : 'bundle:deactivate', entityType: 'PRODUCT', entityId: bundleId } });

@@ -37,11 +37,13 @@ export async function checkout(buyerId: string, input: CheckoutInput) {
   const groups: pricing.PricedGroup[] = [];
   let subtotal = 0, discountTotal = 0, shippingTotal = 0;
   const vouchersApplied: string[] = [];
+  const titleByProduct = new Map<string, string>();
 
   for (const g of cart.groups) {
     const shop = await prisma.shop.findUnique({ where: { id: g.shop.id }, select: { id: true, sellerId: true } });
     if (!shop) throw ApiError.notFound('Shop unavailable');
     const firstProduct = g.items[0];
+    for (const i of g.items) titleByProduct.set(i.productId, i.title);
     const product = await prisma.product.findUnique({ where: { id: firstProduct.productId }, select: { categoryId: true } });
     const commissionPercent = await pricing.resolveCommission(shop.sellerId, product!.categoryId);
 
@@ -125,6 +127,7 @@ export async function checkout(buyerId: string, input: CheckoutInput) {
                 quantity: it.quantity,
                 unitPrice: new Prisma.Decimal(it.unitPrice),
                 totalPrice: new Prisma.Decimal(it.lineTotal),
+                titleSnapshot: titleByProduct.get(it.productId) ?? '',
               })),
             },
           })),
@@ -196,12 +199,12 @@ export async function getOrderForBuyer(buyerId: string, orderNumber: string) {
 export async function cancelOrder(buyerId: string, orderNumber: string, reason?: string) {
   const order = await prisma.order.findFirst({ where: { orderNumber, buyerId }, include: { subOrders: { include: { items: true } } } });
   if (!order) throw ApiError.notFound('Order not found');
-  if ([OrderStatus.SHIPPED, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED].includes(order.status)) throw ApiError.badRequest('This order can no longer be cancelled — please request a return instead');
+  if (([OrderStatus.SHIPPED, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED] as OrderStatus[]).includes(order.status)) throw ApiError.badRequest('This order can no longer be cancelled — please request a return instead');
   if (order.status === OrderStatus.CANCELLED) return order;
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const sub of order.subOrders) {
-      if ([OrderStatus.SHIPPED, OrderStatus.DELIVERED].includes(sub.status)) continue;
+      if (([OrderStatus.SHIPPED, OrderStatus.DELIVERED] as OrderStatus[]).includes(sub.status)) continue;
       for (const item of sub.items) {
         const product = await tx.product.findUnique({ where: { id: item.productId } });
         if (product) {

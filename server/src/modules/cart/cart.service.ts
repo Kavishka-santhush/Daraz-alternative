@@ -23,17 +23,17 @@ export async function addToCart(userId: string, input: { productId: string; vari
   const qty = Math.max(1, input.quantity ?? 1);
   const cart = await prisma.cart.findUnique({ where: { userId } }) ?? (await prisma.cart.create({ data: { userId } }));
 
-  const existing = await prisma.cartItem.findUnique({
-    where: { cartId_productId_variantId: { cartId: cart.id, productId: input.productId, variantId: input.variantId ?? null } },
+  const existing = await prisma.cartItem.findFirst({
+    where: { cartId: cart.id, productId: input.productId, variantId: input.variantId ?? null },
   });
   const targetQty = (existing?.quantity ?? 0) + qty;
   if (targetQty > product.stockQuantity) throw ApiError.badRequest('Requested quantity exceeds available stock');
 
-  await prisma.cartItem.upsert({
-    where: { cartId_productId_variantId: { cartId: cart.id, productId: input.productId, variantId: input.variantId ?? null } },
-    update: { quantity: targetQty },
-    create: { cartId: cart.id, productId: input.productId, variantId: input.variantId ?? null, quantity: qty },
-  });
+  if (existing) {
+    await prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: targetQty } });
+  } else {
+    await prisma.cartItem.create({ data: { cartId: cart.id, productId: input.productId, variantId: input.variantId ?? null, quantity: qty } });
+  }
   return getOrCreateCart(userId);
 }
 

@@ -80,14 +80,14 @@ export async function payoutQueue(query: { status?: string; page?: number; limit
       orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
       skip: (page - 1) * limit,
       take: limit,
-      include: { seller: { select: { id: true, shop: { select: { name: true } }, user: { select: { email: true } } } } },
+      include: { seller: { select: { id: true, shops: { where: { isActive: true }, take: 1, select: { name: true } }, user: { select: { email: true } } } } },
     }),
     prisma.payoutRequest.count({ where }),
-    prisma.payoutRequest.groupBy({ by: ['status'], _sum: { amount: true }, _count: { _all: true } }),
+    prisma.payoutRequest.groupBy({ by: ['status'], orderBy: { status: 'asc' }, _sum: { amount: true }, _count: true }),
   ]);
   return {
     ...paginated(rows, total, page, limit),
-    breakdown: breakdown.map((b) => ({ status: b.status, count: b._count._all, amount: Number(b._sum.amount ?? 0) })),
+    breakdown: breakdown.map((b) => ({ status: b.status, count: b._count, amount: Number(b._sum.amount ?? 0) })),
   };
 }
 
@@ -101,12 +101,12 @@ export async function topSellers(limit = 10) {
   });
   const profiles = await prisma.sellerProfile.findMany({
     where: { id: { in: agg.map((a) => a.sellerId) } },
-    select: { id: true, shop: { select: { name: true } }, user: { select: { email: true } } },
+    select: { id: true, shops: { where: { isActive: true }, take: 1, select: { name: true } }, user: { select: { email: true } } },
   });
   const byId = new Map(profiles.map((p): [string, typeof p] => [p.id, p]));
   return agg.map((a) => ({
     sellerId: a.sellerId,
-    shopName: byId.get(a.sellerId)?.shop?.name ?? null,
+    shopName: byId.get(a.sellerId)?.shops[0]?.name ?? null,
     email: byId.get(a.sellerId)?.user?.email ?? null,
     grossRevenue: Number(a._sum.grossRevenue ?? 0),
     commissionPaid: Number(a._sum.commissionPaid ?? 0),

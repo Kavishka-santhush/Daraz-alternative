@@ -61,10 +61,10 @@ async function buildContext(userId: string, question: string): Promise<string> {
   }
   if (wantsWallet) {
     const [wallet, loyalty] = await prisma.$transaction([
-      prisma.wallet.findUnique({ where: { userId }, select: { balance: true, pendingBalance: true } }),
+      prisma.wallet.findUnique({ where: { userId }, select: { balance: true } }),
       prisma.user.findUnique({ where: { id: userId }, select: { loyaltyPoints: true } }),
     ]);
-    lines.push(`Wallet balance: ${wallet?.balance ?? 0} (pending ${wallet?.pendingBalance ?? 0}). Loyalty points: ${loyalty?.loyaltyPoints ?? 0}.`);
+    lines.push(`Wallet balance: ${wallet?.balance ?? 0}. Loyalty points: ${loyalty?.loyaltyPoints ?? 0}.`);
   }
   return lines.length ? `\n\nLive context for this customer:\n${lines.join('\n')}` : '';
 }
@@ -80,7 +80,7 @@ export async function askChatbot(input: { sessionId?: string; message: string; u
     session = await prisma.aiChatSession.create({ data: { userId: input.userId ?? null, guestId: input.guestId, topic: input.productId ? 'PRODUCT_QUESTION' : 'GENERAL', context: { productId: input.productId } as Prisma.InputJsonValue }, select: { id: true, messages: true } });
   }
 
-  const history = (Array.isArray(session.messages) ? (session.messages as HistoryMessage[]) : []).slice(-MAX_HISTORY);
+  const history = (Array.isArray(session.messages) ? (session.messages as unknown as HistoryMessage[]) : []).slice(-MAX_HISTORY);
   const context = input.userId ? await buildContext(input.userId, input.message) : '';
 
   let system = BASE_SYSTEM + context;
@@ -96,7 +96,7 @@ export async function askChatbot(input: { sessionId?: string; message: string; u
   const reply = answer.trim() || "I'm unable to reach the assistant right now. Please try again, or open a support ticket from Account → Support and our team will help.";
   await prisma.aiChatSession.update({
     where: { id: session.id },
-    data: { messages: [...history, { role: 'user', content: input.message }, { role: 'assistant', content: reply }].slice(-(MAX_HISTORY + 2)) as Prisma.InputJsonValue },
+    data: { messages: [...history, { role: 'user', content: input.message }, { role: 'assistant', content: reply }].slice(-(MAX_HISTORY + 2)) as Prisma.InputJsonValue[] },
   });
   return { sessionId: session.id, answer: reply, historyLength: history.length + 2 };
 }
