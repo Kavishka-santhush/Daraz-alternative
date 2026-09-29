@@ -4,7 +4,7 @@
   "private": true,
   "description": "Monorepo root: backend in server/, frontend in web/. These scripts let a host that builds from the repository root (Render) run the API.",
   "scripts": {
-    "build:server": "cd server && npm install --include=dev && npx prisma generate && DATABASE_URL=\"$DATABASE_URL_DIRECT\" npx prisma migrate deploy --skip-generate && npm run build",
+    "build:server": "cd server && npm install --include=dev && npx prisma generate && DATABASE_URL=\"$DATABASE_URL_DIRECT\" npx prisma migrate deploy && npm run build",
     "start": "node server/dist/index.js",
     "build:web": "cd web && npm install && npm run build"
   }
