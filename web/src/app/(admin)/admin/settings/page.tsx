@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminSettings, useUpdateSettings } from '@/hooks/use-admin';
 import { num } from '@/lib/utils';
-import type { AdminSettings } from '@/types';
+import type { AdminSettings, AdminSettingsInput } from '@/types';
 
 const schema = z.object({
   platformName: z.string().min(2).max(80),
@@ -104,7 +104,7 @@ function SettingsForm() {
     );
   }
 
-  const onSubmit = (values: FormValues) => update.mutate(values as Partial<AdminSettings>);
+  const onSubmit = (values: FormValues) => update.mutate(values as AdminSettingsInput);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

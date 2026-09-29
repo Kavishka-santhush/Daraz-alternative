@@ -7,6 +7,7 @@ import type {
   AdminOverview,
   AdminSellerApplication,
   AdminSettings,
+  AdminSettingsInput,
   AdminUserDetail,
   AdminUserRow,
   AuditLogRow,
@@ -43,7 +44,7 @@ export function useAdminSettings() {
 export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: Partial<AdminSettings>) => apiPatch<AdminSettings>('/admin/settings', body),
+    mutationFn: (body: AdminSettingsInput) => apiPatch<AdminSettings>('/admin/settings', body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'settings'] });
       toast.success('Settings saved');

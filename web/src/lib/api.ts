@@ -48,7 +48,13 @@ export function getClientToken(): string | null {
 async function serverToken(): Promise<string | null> {
   try {
     const { getToken } = await import('next-auth/jwt');
-    const token = await getToken();
+    const { cookies } = await import('next/headers');
+    const list = cookies().getAll();
+    const req = {
+      headers: { cookie: list.map((c) => `${c.name}=${c.value}`).join('; ') },
+      cookies: Object.fromEntries(list.map((c) => [c.name, c.value])),
+    };
+    const token = await getToken({ req: req as never });
     return (token?.accessToken as string) ?? null;
   } catch {
     return null;

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Store, BadgeCheck, MessageSquareQuestion } from 'lucide-react';
+import { Store, BadgeCheck, HelpCircle } from 'lucide-react';
 import { ProductGallery } from '@/components/shared/product-gallery';
 import { PurchasePanel } from '@/components/shared/purchase-panel';
 import { ProductGrid } from '@/components/shared/product-grid';
@@ -118,7 +118,7 @@ export default async function ProductPage({ params }: PageProps) {
         {/* Q&A */}
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
-            <MessageSquareQuestion className="h-5 w-5 text-brand" /> Questions &amp; Answers
+            <HelpCircle className="h-5 w-5 text-brand" /> Questions &amp; Answers
           </h2>
           {(!product.qa || product.qa.length === 0) ? (
             <p className="text-sm text-muted-foreground">No questions yet.</p>

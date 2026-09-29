@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  ArrowRight, Banknote, BadgeCheck, ChartLine, Package, Percent, Store, Truck, Users,
+  ArrowRight, Banknote, BadgeCheck, BarChart3, Package, Percent, Store, Truck, Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +37,7 @@ const steps = [
 
 const perks = [
   { icon: Percent, title: 'Transparent commission', body: 'Per-category rates shown before you list — no surprise fees.' },
-  { icon: ChartLine, title: 'Sales analytics', body: 'Revenue, top products, conversion and traffic at a glance.' },
+  { icon: BarChart3, title: 'Sales analytics', body: 'Revenue, top products, conversion and traffic at a glance.' },
   { icon: BadgeCheck, title: 'Verified badge', body: 'Earn reviews and climb tiers from Bronze to Platinum.' },
   { icon: Users, title: 'Millions of buyers', body: 'Search, flash sales, vouchers and sponsored placements put you in front.' },
 ];

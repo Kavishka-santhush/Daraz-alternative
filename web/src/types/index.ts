@@ -771,6 +771,19 @@ export interface AdminSettings {
   updatedAt: string;
 }
 
+/** PATCH /admin/settings payload. Decimal columns are sent as numbers (server coerces them). */
+export type AdminSettingsInput = Omit<
+  Partial<AdminSettings>,
+  'defaultCommissionPercent' | 'codMaxAmount' | 'minPayoutAmount' | 'freeShippingThreshold' | 'flatShippingFee' | 'taxPercent'
+> & {
+  defaultCommissionPercent?: number;
+  codMaxAmount?: number;
+  minPayoutAmount?: number;
+  freeShippingThreshold?: number;
+  flatShippingFee?: number;
+  taxPercent?: number;
+};
+
 /* ── Finance ───────────────────────────────────────────────── */
 
 /** GET /finance/overview (finance.service.financeOverview). */
