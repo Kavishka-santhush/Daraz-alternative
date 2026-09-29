@@ -96,7 +96,7 @@ export async function checkout(buyerId: string, input: CheckoutInput) {
         addressId: address.id,
         addressSnapshot: address as unknown as Prisma.InputJsonValue,
         paymentMethod: input.paymentMethod as PaymentMethod,
-        installmentPlan: input.installmentPlan as any,
+        installmentPlanType: input.installmentPlan,
         status: OrderStatus.PLACED,
         paymentStatus: input.paymentMethod === 'COD' ? PaymentStatus.PENDING : PaymentStatus.PENDING,
         subtotal: new Prisma.Decimal(subtotal),

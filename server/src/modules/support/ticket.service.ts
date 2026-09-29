@@ -189,12 +189,13 @@ export async function bumpCannedUsage(id: string) {
 // ── Agent workload stats ──
 
 export async function ticketStats() {
-  const [open, inProgress, resolvedToday, unassigned, byPriority] = await prisma.$transaction([
+  // groupBy stays out of the $transaction array so Prisma can narrow _count.
+  const byPriority = await prisma.supportTicket.groupBy({ by: ['priority'], where: { status: { in: [TicketStatus.OPEN, TicketStatus.IN_PROGRESS] } }, orderBy: { priority: 'asc' }, _count: true });
+  const [open, inProgress, resolvedToday, unassigned] = await prisma.$transaction([
     prisma.supportTicket.count({ where: { status: TicketStatus.OPEN } }),
     prisma.supportTicket.count({ where: { status: TicketStatus.IN_PROGRESS } }),
     prisma.supportTicket.count({ where: { status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] }, resolvedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
     prisma.supportTicket.count({ where: { assignedToId: null, status: { in: [TicketStatus.OPEN, TicketStatus.IN_PROGRESS] } } }),
-    prisma.supportTicket.groupBy({ by: ['priority'], where: { status: { in: [TicketStatus.OPEN, TicketStatus.IN_PROGRESS] } }, orderBy: { priority: 'asc' }, _count: true }),
   ]);
   return { open, inProgress, resolvedToday, unassigned, byPriority: Object.fromEntries(byPriority.map((p) => [p.priority, p._count])) };
 }

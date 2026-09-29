@@ -148,12 +148,12 @@ function mapSort(sort?: SearchInput['sort']): Prisma.ProductOrderByWithRelationI
 export async function getFacets(input: SearchInput) {
   const base: Prisma.ProductWhereInput = { status: ProductStatus.ACTIVE };
   if (input.q) base.OR = [{ title: { contains: input.q, mode: 'insensitive' } }, { description: { contains: input.q, mode: 'insensitive' } }];
-  const [categories, brands, price, conditions] = await prisma.$transaction([
-    prisma.product.groupBy({ by: ['categoryId'], where: base, _count: { categoryId: true }, orderBy: { _count: { categoryId: 'desc' } }, take: 12 }),
-    prisma.product.groupBy({ by: ['brandId'], where: { ...base, brandId: { not: null } }, _count: { brandId: true }, orderBy: { _count: { brandId: 'desc' } }, take: 12 }),
-    prisma.product.aggregate({ where: base, _min: { originalPrice: true }, _max: { originalPrice: true } }),
-    prisma.product.groupBy({ by: ['condition'], where: base, _count: true, orderBy: { condition: 'asc' } }),
-  ]);
+  // Not a $transaction array — Prisma cannot bind the args literal through its
+  // SelectSubset there, which leaves every aggregate selection union-typed.
+  const categories = await prisma.product.groupBy({ by: ['categoryId'], where: base, _count: { categoryId: true }, orderBy: { _count: { categoryId: 'desc' } }, take: 12 });
+  const brands = await prisma.product.groupBy({ by: ['brandId'], where: { ...base, brandId: { not: null } }, _count: { brandId: true }, orderBy: { _count: { brandId: 'desc' } }, take: 12 });
+  const price = await prisma.product.aggregate({ where: base, _min: { originalPrice: true }, _max: { originalPrice: true } });
+  const conditions = await prisma.product.groupBy({ by: ['condition'], where: base, _count: true, orderBy: { condition: 'asc' } });
   const categoryIds = categories.map((c) => c.categoryId).filter(Boolean);
   const brandIds = brands.map((b) => b.brandId).filter(Boolean) as string[];
   const [categoryMeta, brandMeta] = await prisma.$transaction([

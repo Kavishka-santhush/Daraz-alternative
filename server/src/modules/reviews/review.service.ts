@@ -85,10 +85,10 @@ export async function listProductReviews(productId: string, req: Request) {
     req.query.sort === 'oldest' ? [{ createdAt: 'asc' }]
       : req.query.sort === 'helpful' ? [{ helpfulVotes: { _count: 'desc' } }, { createdAt: 'desc' }]
       : [{ createdAt: 'desc' }];
-  const [items, total, breakdown] = await prisma.$transaction([
+  const breakdown = await prisma.review.groupBy({ by: ['rating'], where: { productId, isVisible: true }, _count: true, orderBy: { rating: 'asc' } });
+  const [items, total] = await prisma.$transaction([
     prisma.review.findMany({ where, include: { buyer: { select: { name: true, avatarUrl: true } }, helpfulVotes: { select: { userId: true, isHelpful: true } }, media: true }, orderBy, skip: (page - 1) * limit, take: limit }),
     prisma.review.count({ where }),
-    prisma.review.groupBy({ by: ['rating'], where: { productId, isVisible: true }, _count: true, orderBy: { rating: 'asc' } }),
   ]);
   const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<number, number>;
   for (const b of breakdown) counts[b.rating] = b._count;

@@ -74,7 +74,10 @@ export async function payoutQueue(query: { status?: string; page?: number; limit
   const page = Math.max(1, query.page ?? 1);
   const limit = Math.min(100, Math.max(1, query.limit ?? 25));
   const where: Prisma.PayoutRequestWhereInput = query.status ? { status: query.status as Prisma.PayoutRequestWhereInput['status'] } : {};
-  const [rows, total, breakdown] = await prisma.$transaction([
+  // Awaited separately: inside a $transaction array Prisma's SelectSubset can't
+  // bind the args literal, so _sum/_count stay union-typed instead of narrowing.
+  const breakdown = await prisma.payoutRequest.groupBy({ by: ['status'], orderBy: { status: 'asc' }, _sum: { amount: true }, _count: true });
+  const [rows, total] = await prisma.$transaction([
     prisma.payoutRequest.findMany({
       where,
       orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
@@ -83,7 +86,6 @@ export async function payoutQueue(query: { status?: string; page?: number; limit
       include: { seller: { select: { id: true, shops: { where: { isActive: true }, take: 1, select: { name: true } }, user: { select: { email: true } } } } },
     }),
     prisma.payoutRequest.count({ where }),
-    prisma.payoutRequest.groupBy({ by: ['status'], orderBy: { status: 'asc' }, _sum: { amount: true }, _count: true }),
   ]);
   return {
     ...paginated(rows, total, page, limit),
